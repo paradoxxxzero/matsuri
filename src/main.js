@@ -35,16 +35,17 @@ stats.showPanel(null)
 const params = {
   zFov: 45,
   autoRotate: false,
-  afterImage: true,
+  afterImage: false,
   afterImageDamp: 0.9,
   fxaa: true,
   bloom: true,
-  bloomStrength: 1.5,
+  bloomStrength: 3,
   bloomRadius: 0.75,
   bloomThreshold: 0,
-  bloomExposure: 0.75,
+  bloomExposure: 1.5,
 
   maxRocket: 10,
+  pause: false,
 }
 
 const scene = new Scene()
@@ -136,16 +137,18 @@ async function render() {
   const ct = new Date().getTime()
   const dt = (ct - timestamp) / 1000
   timestamp = ct
-  rockets.children.forEach(child => {
-    child.update(dt)
-  })
-  rockets.children
-    .filter(child => child.state === 'finished')
-    .forEach(child => {
-      rockets.remove(child)
+  if (!params.pause) {
+    rockets.children.forEach(child => {
+      child.update(dt)
     })
-  if (rockets.children.length < params.maxRocket && Math.random() < 0.1) {
-    rockets.add(new Rocket())
+    rockets.children
+      .filter(child => child.state === 'finished')
+      .forEach(child => {
+        rockets.remove(child)
+      })
+    if (rockets.children.length < params.maxRocket && Math.random() < 0.1) {
+      rockets.add(new Rocket())
+    }
   }
   controls.update()
   composer.render()
@@ -207,6 +210,7 @@ function initGUI() {
   fx.add(showStats, 'showStats').onChange(v => stats.showPanel(v ? 0 : null))
   const config = gui.addFolder('Configuration')
   config.add(params, 'maxRocket', 0, 1000)
+  config.add(params, 'pause')
   config.add({ restart }, 'restart')
 }
 
