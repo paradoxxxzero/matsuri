@@ -16,14 +16,14 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js'
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js'
 import { FXAAShader } from 'three/examples/jsm/shaders/FXAAShader.js'
-import { Rocket } from './rocket'
 import './style.css'
+import { makeRocket } from './rocket'
 
 let gui, started, raf
 
 const stats = new Stats()
 const showStats = { showStats: false }
-
+const frequency = 1 / 60
 const renderer = new WebGLRenderer()
 renderer.setPixelRatio(window.devicePixelRatio)
 renderer.setSize(window.innerWidth, window.innerHeight)
@@ -44,7 +44,7 @@ const params = {
   bloomThreshold: 0,
   bloomExposure: 1.5,
 
-  maxRocket: 10,
+  maxRocket: 6,
   pause: false,
 }
 
@@ -132,11 +132,9 @@ async function animate() {
   raf = requestAnimationFrame(animate)
 }
 
-let timestamp = new Date().getTime()
-async function render() {
-  const ct = new Date().getTime()
-  const dt = (ct - timestamp) / 1000
-  timestamp = ct
+let previous = new Date().getTime()
+let lag = 0
+function update(dt) {
   if (!params.pause) {
     rockets.children.forEach(child => {
       child.update(dt)
@@ -145,17 +143,31 @@ async function render() {
       .filter(child => child.state === 'finished')
       .forEach(child => {
         rockets.remove(child)
+        child.destroy()
       })
     if (rockets.children.length < params.maxRocket && Math.random() < 0.1) {
-      rockets.add(new Rocket())
+      rockets.add(makeRocket())
     }
   }
+}
+
+async function render() {
+  const current = new Date().getTime()
+  const elapsed = (current - previous) / 1000
+  previous = current
+  lag += elapsed
+
+  while (lag >= frequency) {
+    update(frequency)
+    lag -= frequency
+  }
+
   controls.update()
   composer.render()
 }
 
 function init() {
-  rockets.add(new Rocket())
+  rockets.add(makeRocket())
 }
 
 function restart() {
@@ -209,7 +221,7 @@ function initGUI() {
   )
   fx.add(showStats, 'showStats').onChange(v => stats.showPanel(v ? 0 : null))
   const config = gui.addFolder('Configuration')
-  config.add(params, 'maxRocket', 0, 1000)
+  config.add(params, 'maxRocket', 0, 100)
   config.add(params, 'pause')
   config.add({ restart }, 'restart')
 }

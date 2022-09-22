@@ -8,4 +8,7 @@ export default defineConfig({
     outDir: 'docs',
   },
   plugins: [glsl()],
+  server: {
+    port: 4747,
+  },
 })
