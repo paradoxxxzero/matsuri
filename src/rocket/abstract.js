@@ -1,14 +1,4 @@
-import {
-  Points,
-  AddEquation,
-  AdditiveBlending,
-  CustomBlending,
-  SrcAlphaFactor,
-  OneMinusSrcAlphaFactor,
-  SrcColorFactor,
-  ZeroFactor,
-  SrcAlphaSaturateFactor,
-} from 'three'
+import { AdditiveBlending, Points } from 'three'
 
 import {
   BufferAttribute,
@@ -19,9 +9,9 @@ import {
   StreamDrawUsage,
   Vector3,
 } from 'three'
+import { rnd } from '.'
 import fragmentShader from '../shaders/fragmentShader.glsl'
 import vertexShader from '../shaders/vertexShader.glsl'
-import { rnd } from '.'
 
 export class AbstractRocket extends Points {
   constructor({
@@ -32,6 +22,7 @@ export class AbstractRocket extends Points {
     explosionHeight = 40,
     airFriction = 0.02,
     acceleration = new Vector3(0, 0, -9.8),
+    params,
   } = {}) {
     const totalParticleSize = particles * queue
     const geometry = new BufferGeometry()
@@ -64,11 +55,10 @@ export class AbstractRocket extends Points {
       },
       transparent: true,
       depthTest: false,
-      blending: AdditiveBlending,
-      // blending: CustomBlending,
-      // blendEquation: AddEquation,
-      // blendSrc: SrcColorFactor,
-      // blendDst: SrcAlphaSaturateFactor,
+      blending: params.blending,
+      blendEquation: params.blendEquation,
+      blendSrc: params.blendSrc,
+      blendDst: params.blendDst,
     })
 
     super(geometry, material)

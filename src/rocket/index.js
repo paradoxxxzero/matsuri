@@ -19,11 +19,7 @@ export const types = {
   spiral: SpiralRocket,
 }
 const rndType = () => Object.keys(types)[rnd(0, Object.keys(types).length)]
-const fixedType = () =>
-  location.search.replace(/^\?/, '') in types
-    ? location.search.replace(/^\?/, '')
-    : null
 
-export const makeRocket = type => {
-  return new types[type || fixedType() || rndType()]()
+export const makeRocket = params => {
+  return new types[params.type || rndType()]({ params })
 }

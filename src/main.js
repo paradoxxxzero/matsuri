@@ -1,14 +1,36 @@
 import Stats from 'stats.js'
 import {
+  AdditiveBlending,
+  CustomBlending,
   Group,
+  MultiplyBlending,
+  NormalBlending,
   NoToneMapping,
   PerspectiveCamera,
   ReinhardToneMapping,
   Scene,
+  SubtractiveBlending,
   Vector2,
   WebGLRenderer,
+  AddEquation,
+  SubtractEquation,
+  ReverseSubtractEquation,
+  MinEquation,
+  MaxEquation,
+  ZeroFactor,
+  OneFactor,
+  SrcColorFactor,
+  OneMinusSrcColorFactor,
+  SrcAlphaFactor,
+  OneMinusSrcAlphaFactor,
+  DstAlphaFactor,
+  OneMinusDstAlphaFactor,
+  DstColorFactor,
+  OneMinusDstColorFactor,
+  SrcAlphaSaturateFactor,
+  NoBlending,
 } from 'three'
-import { GUI } from 'three/addons/libs/lil-gui.module.min.js'
+import { GUI } from 'lil-gui'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { AfterimagePass } from 'three/examples/jsm/postprocessing/AfterimagePass.js'
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js'
@@ -16,10 +38,39 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js'
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js'
 import { FXAAShader } from 'three/examples/jsm/shaders/FXAAShader.js'
+import { makeRocket, types } from './rocket'
 import './style.css'
-import { makeRocket } from './rocket'
 
 let gui, started, raf
+
+export const blendings = {
+  NoBlending,
+  NormalBlending,
+  AdditiveBlending,
+  SubtractiveBlending,
+  MultiplyBlending,
+  CustomBlending,
+}
+export const blendingEquations = {
+  AddEquation,
+  SubtractEquation,
+  ReverseSubtractEquation,
+  MinEquation,
+  MaxEquation,
+}
+export const blendingFactors = {
+  ZeroFactor,
+  OneFactor,
+  SrcColorFactor,
+  OneMinusSrcColorFactor,
+  SrcAlphaFactor,
+  OneMinusSrcAlphaFactor,
+  DstAlphaFactor,
+  OneMinusDstAlphaFactor,
+  DstColorFactor,
+  OneMinusDstColorFactor,
+  SrcAlphaSaturateFactor,
+}
 
 const stats = new Stats()
 const showStats = { showStats: false }
@@ -33,6 +84,10 @@ document.body.appendChild(stats.dom)
 stats.showPanel(null)
 
 const params = {
+  type:
+    location.search.replace(/^\?/, '') in types
+      ? location.search.replace(/^\?/, '')
+      : null,
   zFov: 45,
   autoRotate: false,
   afterImage: false,
@@ -43,7 +98,10 @@ const params = {
   bloomRadius: 0.75,
   bloomThreshold: 0,
   bloomExposure: 1.5,
-
+  blending: CustomBlending,
+  blendEquation: AddEquation,
+  blendSrc: SrcAlphaFactor,
+  blendDst: OneMinusSrcAlphaFactor,
   maxRocket: 6,
   pause: false,
 }
@@ -146,7 +204,7 @@ function update(dt) {
         child.destroy()
       })
     if (rockets.children.length < params.maxRocket && Math.random() < 0.1) {
-      rockets.add(makeRocket())
+      rockets.add(makeRocket(params))
     }
   }
 }
@@ -167,7 +225,7 @@ async function render() {
 }
 
 function init() {
-  rockets.add(makeRocket())
+  rockets.add(makeRocket(params))
 }
 
 function restart() {
@@ -189,9 +247,13 @@ function initGUI() {
   })
   // gui.remember(params)
 
-  gui.add(params, 'zFov', 0, 180).onChange(v => {
-    camera.fov = v
-    camera.updateProjectionMatrix()
+  // gui.add(params, 'zFov', 0, 180).onChange(v => {
+  //   camera.fov = v
+  //   camera.updateProjectionMatrix()
+  // })
+  gui.add(params, 'type', {
+    all: null,
+    ...Object.fromEntries(Object.keys(types).map(v => [v, v])),
   })
 
   const fx = gui.addFolder('Render fx')
@@ -219,6 +281,32 @@ function initGUI() {
   fx.add(params, 'afterImageDamp', 0, 1).onChange(
     v => (afterImagePass.uniforms.damp.value = v)
   )
+  const setMaterialProp = key => v => {
+    rockets.children.forEach(child => {
+      child.material[key] = v
+    })
+  }
+
+  fx.add(params, 'blending', blendings).onChange(v => {
+    setMaterialProp('blending')(v)
+    if (v === CustomBlending) {
+      customBlending.show()
+    } else {
+      customBlending.hide()
+    }
+  })
+
+  const customBlending = fx.addFolder('customBlendingParams')
+  customBlending
+    .add(params, 'blendEquation', blendingEquations)
+    .onChange(setMaterialProp('blendEquation'))
+  customBlending
+    .add(params, 'blendSrc', blendingFactors)
+    .onChange(setMaterialProp('blendSrc'))
+  customBlending
+    .add(params, 'blendDst', blendingFactors)
+    .onChange(setMaterialProp('blendDst'))
+
   fx.add(showStats, 'showStats').onChange(v => stats.showPanel(v ? 0 : null))
   const config = gui.addFolder('Configuration')
   config.add(params, 'maxRocket', 0, 100)
