@@ -99,10 +99,12 @@ const params = {
   bloomThreshold: 0,
   bloomExposure: 1.5,
   blending: CustomBlending,
-  blendEquation: AddEquation,
+  blendEquation: MaxEquation,
   blendSrc: SrcAlphaFactor,
   blendDst: OneMinusSrcAlphaFactor,
-  maxRocket: 6,
+  rockets: 6,
+  shootiness: 0.1,
+  speed: 1,
   pause: false,
 }
 
@@ -203,15 +205,20 @@ function update(dt) {
         rockets.remove(child)
         child.destroy()
       })
-    if (rockets.children.length < params.maxRocket && Math.random() < 0.1) {
-      rockets.add(makeRocket(params))
+
+    if (rockets.children.length < params.rockets) {
+      for (let i = rockets.children.length; i < params.rockets; i++) {
+        if (Math.random() < params.shootiness) {
+          rockets.add(makeRocket(params))
+        }
+      }
     }
   }
 }
 
 async function render() {
   const current = new Date().getTime()
-  const elapsed = (current - previous) / 1000
+  const elapsed = ((current - previous) * params.speed) / 1000
   previous = current
   lag += elapsed
 
@@ -228,25 +235,21 @@ function init() {
   rockets.add(makeRocket(params))
 }
 
-function restart() {
-  if (!started) {
-    return
-  }
-  cancelAnimationFrame(raf)
-  rockets.clear()
-  controls.reset()
-  controls.target.set(0, 0, 30)
-  init()
-  raf = requestAnimationFrame(animate)
-}
-
 function initGUI() {
-  gui = new GUI({
-    // load: presets,
-    // preset,
-  })
-  // gui.remember(params)
+  gui = new GUI()
 
+  function reset() {
+    if (!started) {
+      return
+    }
+    cancelAnimationFrame(raf)
+    rockets.clear()
+    controls.reset()
+    controls.target.set(0, 0, 30)
+    gui.load(defaultParams)
+    init()
+    raf = requestAnimationFrame(animate)
+  }
   // gui.add(params, 'zFov', 0, 180).onChange(v => {
   //   camera.fov = v
   //   camera.updateProjectionMatrix()
@@ -309,9 +312,13 @@ function initGUI() {
 
   fx.add(showStats, 'showStats').onChange(v => stats.showPanel(v ? 0 : null))
   const config = gui.addFolder('Configuration')
-  config.add(params, 'maxRocket', 0, 100)
+  config.add(params, 'rockets', 0, 100, 1)
+  config.add(params, 'shootiness', 0.0, 1.0, 0.01)
+  config.add(params, 'speed', 0.0, 5.0, 0.01)
   config.add(params, 'pause')
-  config.add({ restart }, 'restart')
+
+  const defaultParams = gui.save()
+  config.add({ reset }, 'reset')
 }
 
 init()
