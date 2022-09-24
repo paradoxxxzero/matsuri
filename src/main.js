@@ -102,6 +102,8 @@ const params = {
   blendEquation: MaxEquation,
   blendSrc: SrcAlphaFactor,
   blendDst: OneMinusSrcAlphaFactor,
+  pointSize: 1,
+  lifespan: 1,
   rockets: 6,
   shootiness: 0.1,
   speed: 1,
@@ -293,6 +295,11 @@ function initGUI() {
       child.material[key] = v
     })
   }
+  const setMaterialUniform = key => v => {
+    rockets.children.forEach(child => {
+      child.material.uniforms[key].value = v
+    })
+  }
 
   fx.add(params, 'blending', blendings).onChange(v => {
     setMaterialProp('blending')(v)
@@ -316,6 +323,10 @@ function initGUI() {
 
   fx.add(showStats, 'showStats').onChange(v => stats.showPanel(v ? 0 : null))
   const config = gui.addFolder('Configuration')
+  config
+    .add(params, 'pointSize', 0, 5, 0.1)
+    .onChange(setMaterialUniform('pointSize'))
+  config.add(params, 'lifespan', 0, 5, 0.1)
   config.add(params, 'rockets', 0, 100, 1)
   config.add(params, 'shootiness', 0.0, 1.0, 0.01)
   config.add(params, 'speed', 0.0, 5.0, 0.01)
@@ -323,6 +334,9 @@ function initGUI() {
 
   const defaultParams = gui.save()
   config.add({ reset }, 'reset')
+  if (window.innerWidth < 600) {
+    gui.close()
+  }
 }
 
 init()

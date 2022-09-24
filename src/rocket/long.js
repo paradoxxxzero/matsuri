@@ -12,13 +12,9 @@ export class LongRocket extends AbstractRocket {
     })
   }
 
-  getColors() {
+  getColor() {
     const h = 0.07 + rnd(0, 1) / 20
-    return new Array(this.queue)
-      .fill()
-      .map((_, i) =>
-        new Color().setHSL(h, 1, i ? 0.75 - i / (2 * this.queue) : 1)
-      )
+    return new Color().setHSL(h, 1, 0.65)
   }
 
   getInitialSpeed() {

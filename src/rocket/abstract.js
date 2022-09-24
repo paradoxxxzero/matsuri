@@ -1,4 +1,4 @@
-import { AdditiveBlending, Points } from 'three'
+import { Points } from 'three'
 
 import {
   BufferAttribute,
@@ -29,8 +29,8 @@ export class AbstractRocket extends Points {
     const positions = new Float32Array(totalParticleSize * 3)
     const speed = new Float32Array(totalParticleSize * 3)
     const color = new Float32Array(totalParticleSize * 3)
-    const scale = new Float32Array(totalParticleSize)
-    const w = new Float32Array(totalParticleSize)
+    const uv = new Float32Array(totalParticleSize * 2)
+
     geometry.setAttribute(
       'position',
       new BufferAttribute(positions, 3).setUsage(StreamDrawUsage)
@@ -43,17 +43,14 @@ export class AbstractRocket extends Points {
       'color',
       new BufferAttribute(color, 3).setUsage(StreamDrawUsage)
     )
-    geometry.setAttribute(
-      'scale',
-      new BufferAttribute(scale, 1).setUsage(StreamDrawUsage)
-    )
-    geometry.setAttribute('w', new BufferAttribute(w, 1))
+    geometry.setAttribute('uv', new BufferAttribute(uv, 2))
 
     const material = new ShaderMaterial({
       vertexShader,
       fragmentShader,
       uniforms: {
         time: { value: 0 },
+        pointSize: { value: params.pointSize },
       },
       transparent: true,
       depthTest: false,
@@ -67,7 +64,7 @@ export class AbstractRocket extends Points {
     this.particles = particles
     this.queue = queue
     this.totalParticleSize = totalParticleSize
-    this.lifespan = lifespan
+    this.lifespan = params.lifespan * lifespan
     this.squareSize = squareSize
     this.explosionHeight = explosionHeight
     this.airFriction = airFriction
@@ -80,16 +77,12 @@ export class AbstractRocket extends Points {
     const position = this.geometry.attributes.position.array
     const speed = this.geometry.attributes.speed.array
     const color = this.geometry.attributes.color.array
-    const scale = this.geometry.attributes.scale.array
-    const w = this.geometry.attributes.w.array
+    const uv = this.geometry.attributes.uv.array
 
     this.state = 'ignition'
     this.geometry.setDrawRange(0, this.queue)
-    const c = new Array(this.queue)
-      .fill()
-      .map((_, i) =>
-        new Color().setHSL(0.1, 1, i ? 0.5 - i / (2 * this.queue) : 0.7)
-      )
+
+    const baseColor = new Color().setHSL(0.1, 1, 0.7)
     for (let i = 0; i < this.queue; i++) {
       position[i * 3] = rnd(-this.squareSize, this.squareSize)
       position[i * 3 + 1] = rnd(-this.squareSize, this.squareSize)
@@ -97,36 +90,34 @@ export class AbstractRocket extends Points {
       speed[i * 3] = rnd(-10, 10) / 2
       speed[i * 3 + 1] = rnd(-10, 10) / 2
       speed[i * 3 + 2] = rnd(30, 50)
-      color[i * 3] = c[i].r
-      color[i * 3 + 1] = c[i].g
-      color[i * 3 + 2] = c[i].b
-      scale[i] = i ? 0.5 - i / (2 * this.queue) : 1
+      color[i * 3] = baseColor.r
+      color[i * 3 + 1] = baseColor.g
+      color[i * 3 + 2] = baseColor.b
     }
     for (let i = 0; i < this.particles; i++) {
       for (let j = 0; j < this.queue; j++) {
         const p = i * this.queue + j
-        w[p] = i / this.particles
+        uv[p * 2] = i / this.particles
+        uv[p * 2 + 1] = j / this.queue
       }
     }
     this.geometry.attributes.position.needsUpdate = true
     this.geometry.attributes.speed.needsUpdate = true
     this.geometry.attributes.color.needsUpdate = true
-    this.geometry.attributes.scale.needsUpdate = true
-    this.geometry.attributes.w.needsUpdate = true
+    this.geometry.attributes.uv.needsUpdate = true
   }
 
   explode() {
     const position = this.geometry.attributes.position.array
     const speed = this.geometry.attributes.speed.array
     const color = this.geometry.attributes.color.array
-    const scale = this.geometry.attributes.scale.array
 
     this.state = 'explosion'
     const x = position[0]
     const y = position[1]
     const z = position[2]
 
-    const colors = this.getColors()
+    const baseColor = this.getColor()
     const initialSpeed = this.getInitialSpeed()
     for (let i = 0; i < this.particles; i++) {
       for (let j = 0; j < this.queue; j++) {
@@ -137,15 +128,13 @@ export class AbstractRocket extends Points {
         speed[p * 3] = j ? 0 : initialSpeed[i].x
         speed[p * 3 + 1] = j ? 0 : initialSpeed[i].y
         speed[p * 3 + 2] = j ? 0 : initialSpeed[i].z
-        color[p * 3] = colors[j].r
-        color[p * 3 + 1] = colors[j].g
-        color[p * 3 + 2] = colors[j].b
-        scale[p] = j ? 0.8 - (0.8 * j) / (2 * this.queue) : 1
+        color[p * 3] = baseColor.r
+        color[p * 3 + 1] = baseColor.g
+        color[p * 3 + 2] = baseColor.b
       }
     }
     this.material.needsUpdate = true
     this.geometry.attributes.color.needsUpdate = true
-    this.geometry.attributes.scale.needsUpdate = true
     this.geometry.setDrawRange(0, this.totalParticleSize)
   }
 
@@ -189,6 +178,10 @@ export class AbstractRocket extends Points {
             position[p * 3] += dt * speed[p * 3]
             position[p * 3 + 1] += dt * speed[p * 3 + 1]
             position[p * 3 + 2] += dt * speed[p * 3 + 2]
+            if (position[p * 3 + 2] < 0) {
+              position[p * 3 + 2] = 0
+              speed[p * 3 + 2] = -speed[p * 3 + 2] * 0.5
+            }
           } else {
             const op = i * this.queue + j - 1
             position[p * 3] = position[op * 3]
@@ -206,13 +199,9 @@ export class AbstractRocket extends Points {
     // this.geometry.attributes.speed.needsUpdate = true
   }
 
-  getColors() {
+  getColor() {
     const h = rnd(0, 360) / 360
-    return new Array(this.queue)
-      .fill()
-      .map((_, i) =>
-        new Color().setHSL(h, 0.75, i ? 0.5 - (0.4 * i) / this.queue : 0.75)
-      )
+    return new Color().setHSL(h, 0.75, 0.75)
   }
 
   getInitialSpeed() {
