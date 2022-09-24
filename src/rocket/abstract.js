@@ -30,6 +30,7 @@ export class AbstractRocket extends Points {
     const speed = new Float32Array(totalParticleSize * 3)
     const color = new Float32Array(totalParticleSize * 3)
     const scale = new Float32Array(totalParticleSize)
+    const w = new Float32Array(totalParticleSize)
     geometry.setAttribute(
       'position',
       new BufferAttribute(positions, 3).setUsage(StreamDrawUsage)
@@ -46,6 +47,7 @@ export class AbstractRocket extends Points {
       'scale',
       new BufferAttribute(scale, 1).setUsage(StreamDrawUsage)
     )
+    geometry.setAttribute('w', new BufferAttribute(w, 1))
 
     const material = new ShaderMaterial({
       vertexShader,
@@ -79,6 +81,7 @@ export class AbstractRocket extends Points {
     const speed = this.geometry.attributes.speed.array
     const color = this.geometry.attributes.color.array
     const scale = this.geometry.attributes.scale.array
+    const w = this.geometry.attributes.w.array
 
     this.state = 'ignition'
     this.geometry.setDrawRange(0, this.queue)
@@ -99,11 +102,17 @@ export class AbstractRocket extends Points {
       color[i * 3 + 2] = c[i].b
       scale[i] = i ? 0.5 - i / (2 * this.queue) : 1
     }
-
+    for (let i = 0; i < this.particles; i++) {
+      for (let j = 0; j < this.queue; j++) {
+        const p = i * this.queue + j
+        w[p] = i / this.particles
+      }
+    }
     this.geometry.attributes.position.needsUpdate = true
     this.geometry.attributes.speed.needsUpdate = true
     this.geometry.attributes.color.needsUpdate = true
     this.geometry.attributes.scale.needsUpdate = true
+    this.geometry.attributes.w.needsUpdate = true
   }
 
   explode() {
