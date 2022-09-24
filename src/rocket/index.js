@@ -6,6 +6,7 @@ import { BiCircleRocket } from './bicircle'
 import { BiColorRocket } from './bicolor'
 import { BiColorHarmonicRocket } from './bicolorharmonic'
 import { SpiralRocket } from './spiral'
+import { GeyserRocket } from './geyser'
 
 export const rnd = (min, max) => min + ~~(Math.random() * (max - min))
 export const types = {
@@ -17,6 +18,7 @@ export const types = {
   bicircle: BiCircleRocket,
   bicolorharmonic: BiColorHarmonicRocket,
   spiral: SpiralRocket,
+  geyser: GeyserRocket,
 }
 const rndType = () => Object.keys(types)[rnd(0, Object.keys(types).length)]
 

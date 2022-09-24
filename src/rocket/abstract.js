@@ -102,7 +102,6 @@ export class AbstractRocket extends Points {
       }
     }
     this.geometry.attributes.position.needsUpdate = true
-    this.geometry.attributes.speed.needsUpdate = true
     this.geometry.attributes.color.needsUpdate = true
     this.geometry.attributes.uv.needsUpdate = true
   }
