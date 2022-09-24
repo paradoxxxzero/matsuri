@@ -222,6 +222,10 @@ async function render() {
   previous = current
   lag += elapsed
 
+  if (lag > 1) {
+    lag = 1
+  }
+
   while (lag >= frequency) {
     update(frequency)
     lag -= frequency

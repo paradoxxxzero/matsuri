@@ -17,11 +17,11 @@ export class AbstractRocket extends Points {
   constructor({
     particles = 1000,
     queue = 15,
-    fading = 0.96,
     squareSize = 25,
     explosionHeight = 40,
     airFriction = 0.02,
     acceleration = new Vector3(0, 0, -9.8),
+    lifespan = 2.5,
     params,
   } = {}) {
     const totalParticleSize = particles * queue
@@ -51,7 +51,7 @@ export class AbstractRocket extends Points {
       vertexShader,
       fragmentShader,
       uniforms: {
-        potential: { value: 1 },
+        time: { value: 0 },
       },
       transparent: true,
       depthTest: false,
@@ -65,11 +65,12 @@ export class AbstractRocket extends Points {
     this.particles = particles
     this.queue = queue
     this.totalParticleSize = totalParticleSize
-    this.fading = fading
+    this.lifespan = lifespan
     this.squareSize = squareSize
     this.explosionHeight = explosionHeight
     this.airFriction = airFriction
     this.acceleration = acceleration
+    this.age = 0
     this.ignite()
   }
 
@@ -166,6 +167,7 @@ export class AbstractRocket extends Points {
         }
       }
     } else if (this.state === 'explosion') {
+      this.age += dt
       for (let i = 0; i < this.particles; i++) {
         for (let j = this.queue - 1; j >= 0; j--) {
           const p = i * this.queue + j
@@ -186,8 +188,8 @@ export class AbstractRocket extends Points {
           }
         }
       }
-      this.material.uniforms.potential.value *= this.fading
-      if (this.material.uniforms.potential.value < 0.01) {
+      this.material.uniforms.time.value = this.age / this.lifespan
+      if (this.material.uniforms.time.value >= 1) {
         this.state = 'finished'
       }
     }

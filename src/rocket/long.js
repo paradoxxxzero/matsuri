@@ -7,7 +7,7 @@ export class LongRocket extends AbstractRocket {
     super({
       particles: 600,
       queue: 50,
-      fading: 0.985,
+      lifespan: 5,
       ...options,
     })
   }
