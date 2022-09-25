@@ -5,8 +5,8 @@ import { Color, Spherical, Vector3 } from 'three'
 export class LongRocket extends AbstractRocket {
   constructor(options = {}) {
     super({
-      particles: 600,
-      queue: 50,
+      particles: 1 / 6,
+      queue: 3,
       lifespan: 5,
       ...options,
     })

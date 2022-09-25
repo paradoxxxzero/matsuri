@@ -74,7 +74,6 @@ export const blendingFactors = {
 
 const stats = new Stats()
 const showStats = { showStats: false }
-const frequency = 1 / 60
 const renderer = new WebGLRenderer()
 renderer.setPixelRatio(window.devicePixelRatio)
 renderer.setSize(window.innerWidth, window.innerHeight)
@@ -103,10 +102,15 @@ const params = {
   blendSrc: SrcAlphaFactor,
   blendDst: OneMinusSrcAlphaFactor,
   pointSize: 1,
+  particles: 1000,
+  queue: 15,
+  blinking: 50,
+  blinkingRange: 1,
   lifespan: 1,
   rockets: 6,
   shootiness: 0.1,
   speed: 1,
+  refreshRate: 60,
   pause: false,
 }
 
@@ -219,6 +223,7 @@ function update(dt) {
 }
 
 async function render() {
+  const frequency = 1 / params.refreshRate
   const current = new Date().getTime()
   const elapsed = ((current - previous) * params.speed) / 1000
   previous = current
@@ -326,10 +331,19 @@ function initGUI() {
   config
     .add(params, 'pointSize', 0, 5, 0.1)
     .onChange(setMaterialUniform('pointSize'))
+  config
+    .add(params, 'blinking', 0, 100, 1)
+    .onChange(setMaterialUniform('blinking'))
+  config
+    .add(params, 'blinkingRange', 0, 1, 0.01)
+    .onChange(setMaterialUniform('blinkingRange'))
+  config.add(params, 'particles', 1, 10000, 1)
+  config.add(params, 'queue', 1, 100, 1)
   config.add(params, 'lifespan', 0, 5, 0.1)
   config.add(params, 'rockets', 0, 100, 1)
   config.add(params, 'shootiness', 0.0, 1.0, 0.01)
   config.add(params, 'speed', 0.0, 5.0, 0.01)
+  config.add(params, 'refreshRate', 0.0, 500, 1)
   config.add(params, 'pause')
 
   const defaultParams = gui.save()

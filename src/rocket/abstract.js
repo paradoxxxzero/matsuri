@@ -15,8 +15,8 @@ import vertexShader from '../shaders/vertexShader.glsl'
 
 export class AbstractRocket extends Points {
   constructor({
-    particles = 1000,
-    queue = 15,
+    particles = 1,
+    queue = 1,
     squareSize = 25,
     explosionHeight = 40,
     airFriction = 0.02,
@@ -24,6 +24,9 @@ export class AbstractRocket extends Points {
     lifespan = 2.5,
     params,
   } = {}) {
+    particles = params.particles * particles
+    queue = params.queue * queue
+
     const totalParticleSize = particles * queue
     const geometry = new BufferGeometry()
     const positions = new Float32Array(totalParticleSize * 3)
@@ -51,6 +54,8 @@ export class AbstractRocket extends Points {
       uniforms: {
         time: { value: 0 },
         pointSize: { value: params.pointSize },
+        blinking: { value: params.blinking },
+        blinkingRange: { value: params.blinkingRange },
       },
       transparent: true,
       depthTest: false,
