@@ -66,6 +66,8 @@ export class AbstractRocket extends Points {
     })
 
     super(geometry, material)
+    this.frustumCulled = false
+
     this.particles = particles
     this.queue = queue
     this.totalParticleSize = totalParticleSize
